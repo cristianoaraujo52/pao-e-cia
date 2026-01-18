@@ -1,7 +1,7 @@
 
 import React, { useState, useEffect, useRef } from 'react';
 import { Page, ChatMessage, User } from '../types';
-import { isSupabaseConfigured, fetchMessages, sendMessage, subscribeToMessages } from '../services/supabase';
+import { isSupabaseConfigured, fetchMessages, sendMessage, subscribeToMessages, supabase } from '../services/supabase';
 
 interface ChatProps {
     user: User | null;
