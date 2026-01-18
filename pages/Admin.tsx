@@ -459,7 +459,7 @@ const Admin: React.FC<AdminProps> = ({
                                     acc[userId].unreadCount++;
                                 }
                                 return acc;
-                            }, {}))
+                            }, {} as Record<string, Conversation>))
                                 .sort(([, a], [, b]) => new Date(b.lastMessage.createdAt).getTime() - new Date(a.lastMessage.createdAt).getTime())
                                 .map(([userId, conv]) => (
                                     <div
