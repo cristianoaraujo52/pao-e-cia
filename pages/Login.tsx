@@ -165,27 +165,39 @@ const Login: React.FC<LoginProps> = ({ onLogin, onNavigate }) => {
       </div>
 
       {/* Quick Login */}
-      <div className="flex gap-4 px-4 pb-8">
-        <button
-          onClick={() => {
-            setEmail('morador@bourgogne.com');
-            setPassword('123456');
-          }}
-          className="flex-1 flex items-center justify-center h-14 border-2 border-accent-brown/20 rounded-xl bg-white dark:bg-background-dark gap-2 hover:border-primary/30 transition-colors"
-        >
-          <span className="material-symbols-outlined text-primary">person</span>
-          <span className="text-[#1d180c] dark:text-white font-bold text-sm">Morador</span>
-        </button>
-        <button
-          onClick={() => {
-            setEmail('admin@bourgogne.com');
-            setPassword('admin123');
-          }}
-          className="flex-1 flex items-center justify-center h-14 border-2 border-primary/30 rounded-xl bg-primary/10 gap-2 hover:bg-primary/20 transition-colors"
-        >
-          <span className="material-symbols-outlined text-primary">admin_panel_settings</span>
-          <span className="text-primary font-bold text-sm">Admin</span>
-        </button>
+      <div className="flex flex-col gap-3 px-4 pb-8">
+        <div className="flex gap-3">
+          <button
+            onClick={() => {
+              setEmail('morador@bourgogne.com');
+              setPassword('123456');
+            }}
+            className="flex-1 flex items-center justify-center h-14 border-2 border-accent-brown/20 rounded-xl bg-white dark:bg-background-dark gap-2 hover:border-primary/30 transition-colors"
+          >
+            <span className="material-symbols-outlined text-primary">person</span>
+            <span className="text-[#1d180c] dark:text-white font-bold text-sm">Morador</span>
+          </button>
+          <button
+            onClick={() => {
+              setEmail('admin@bourgogne.com');
+              setPassword('admin123');
+            }}
+            className="flex-1 flex items-center justify-center h-14 border-2 border-primary/30 rounded-xl bg-primary/10 gap-2 hover:bg-primary/20 transition-colors"
+          >
+            <span className="material-symbols-outlined text-primary">admin_panel_settings</span>
+            <span className="text-primary font-bold text-sm">Admin</span>
+          </button>
+        </div>
+
+        {onNavigate && (
+          <button
+            onClick={() => onNavigate(Page.REGISTER)}
+            className="w-full flex items-center justify-center h-14 bg-white dark:bg-[#383330] border-2 border-primary/50 text-primary font-extrabold rounded-xl shadow-sm gap-2 hover:bg-primary/5 transition-colors"
+          >
+            <span className="material-symbols-outlined">person_add</span>
+            CRIAR NOVA CONTA
+          </button>
+        )}
       </div>
 
       {/* Footer */}
@@ -193,17 +205,6 @@ const Login: React.FC<LoginProps> = ({ onLogin, onNavigate }) => {
         <p className="text-accent-brown dark:text-primary/70 text-sm">
           🏢 Exclusivo para moradores do Bourgogne
         </p>
-        {onNavigate && (
-          <p className="text-warm-accent text-sm">
-            Não tem conta?{' '}
-            <button
-              onClick={() => onNavigate(Page.REGISTER)}
-              className="text-primary font-bold hover:underline"
-            >
-              Criar Conta
-            </button>
-          </p>
-        )}
       </div>
     </div>
   );

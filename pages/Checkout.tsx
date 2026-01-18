@@ -281,8 +281,8 @@ const Checkout: React.FC<CheckoutProps> = ({ cart, user, onComplete, onNavigate,
 
       {/* Fixed Footer for Step 3 */}
       {step === 3 && (
-        <footer className="fixed bottom-0 left-1/2 -translate-x-1/2 w-full max-w-[480px] bg-white/80 dark:bg-background-dark/80 backdrop-blur-xl p-4 pb-8 border-t z-50">
-          <button onClick={handleFinishOrder} className="w-full h-14 bg-primary text-[#1d180c] text-lg font-extrabold rounded-xl shadow-lg flex items-center justify-center gap-3">
+        <footer className="fixed bottom-0 left-1/2 -translate-x-1/2 w-full max-w-[480px] bg-white/80 dark:bg-background-dark/80 backdrop-blur-xl p-4 pb-8 border-t z-50 safe-area-bottom">
+          <button onClick={handleFinishOrder} className="w-full h-14 bg-primary text-[#1d180c] text-lg font-extrabold rounded-xl shadow-lg flex items-center justify-center gap-3 mb-2">
             Finalizar Pedido <span className="material-symbols-outlined">shopping_bag</span>
           </button>
         </footer>
