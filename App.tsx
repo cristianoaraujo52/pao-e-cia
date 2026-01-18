@@ -26,44 +26,44 @@ import NotificationToast from './components/NotificationToast';
 
 const App: React.FC = () => {
   const [currentPage, setCurrentPage] = useState<Page>(Page.HOME);
-  const [user, setUser] = useState<User | null>(null);
-  const [cart, setCart] = useState<CartItem[]>([]);
+
+  // Initialize state from local storage to prevent overwriting on mount
+  const [user, setUser] = useState<User | null>(() => {
+    const stored = localStorage.getItem('user');
+    try {
+      return stored ? JSON.parse(stored) : null;
+    } catch {
+      return null;
+    }
+  });
+
+  const [cart, setCart] = useState<CartItem[]>(() => {
+    const stored = localStorage.getItem('cart');
+    try {
+      return stored ? JSON.parse(stored) : [];
+    } catch {
+      return [];
+    }
+  });
+
   const [products, setProducts] = useState<Product[]>([]);
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('all');
-  const [lastOrder, setLastOrder] = useState<Order | null>(null);
+
+  const [lastOrder, setLastOrder] = useState<Order | null>(() => {
+    const stored = localStorage.getItem('lastOrder');
+    try {
+      return stored ? JSON.parse(stored) : null;
+    } catch {
+      return null;
+    }
+  });
+
   const [isLoading, setIsLoading] = useState(true);
 
+  // Load products data
   useEffect(() => {
-    // Load state from local storage on mount
-    const storedCart = localStorage.getItem('cart');
-    if (storedCart) {
-      try {
-        setCart(JSON.parse(storedCart));
-      } catch (e) {
-        console.error('Failed to parse cart from local storage');
-      }
-    }
-
-    const storedUser = localStorage.getItem('user');
-    if (storedUser) {
-      try {
-        setUser(JSON.parse(storedUser));
-      } catch (e) {
-        console.error('Failed to parse user from local storage');
-      }
-    }
-
-    const storedOrder = localStorage.getItem('lastOrder');
-    if (storedOrder) {
-      try {
-        setLastOrder(JSON.parse(storedOrder));
-      } catch (e) {
-        console.error('Failed to parse lastOrder from local storage');
-      }
-    }
-
     loadProductsData();
   }, []);
 
