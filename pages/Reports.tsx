@@ -135,7 +135,7 @@ const Reports: React.FC<ReportsProps> = ({ onNavigate }) => {
 
             {/* Header */}
             <header className="sticky top-0 z-40 bg-primary p-4">
-                <div className="flex items-center justify-between">
+                <div className="flex items-center justify-between print:hidden">
                     <button
                         onClick={() => onNavigate(Page.ADMIN)}
                         className="size-10 bg-white/20 rounded-xl flex items-center justify-center text-white"
@@ -146,14 +146,41 @@ const Reports: React.FC<ReportsProps> = ({ onNavigate }) => {
                         <h1 className="text-white text-lg font-extrabold">Relatórios</h1>
                         <p className="text-white/70 text-xs">Fluxo de caixa e vendas</p>
                     </div>
-                    <button
-                        onClick={loadData}
-                        className="size-10 bg-white/20 rounded-xl flex items-center justify-center text-white"
-                    >
-                        <span className="material-symbols-outlined">refresh</span>
-                    </button>
+                    <div className="flex gap-2">
+                        <button
+                            onClick={() => window.print()}
+                            className="size-10 bg-white/20 rounded-xl flex items-center justify-center text-white hover:bg-white/30 transition-colors"
+                            title="Imprimir Relatório"
+                        >
+                            <span className="material-symbols-outlined">print</span>
+                        </button>
+                        <button
+                            onClick={loadData}
+                            className="size-10 bg-white/20 rounded-xl flex items-center justify-center text-white hover:bg-white/30 transition-colors"
+                        >
+                            <span className="material-symbols-outlined">refresh</span>
+                        </button>
+                    </div>
                 </div>
             </header>
+
+            {/* Print Styles */}
+            <style>{`
+                @media print {
+                    @page { margin: 20mm; }
+                    body { background: white !important; }
+                    .print\\:hidden { display: none !important; }
+                    header { background: white !important; color: black !important; position: static !important; padding: 0 !important; }
+                    header h1 { color: black !important; font-size: 24px !important; }
+                    header p { color: gray !important; }
+                    .bg-background-light, .bg-background-dark { background: white !important; }
+                    .text-white { color: black !important; }
+                    .bg-white, .dark\\:bg-\\[\\#383330\\] { background: white !important; box-shadow: none !important; border: 1px solid #eee !important; }
+                    .text-\\[\\#1d180c\\] { color: black !important; }
+                    .animate-slideUp, .animate-fadeIn { animation: none !important; }
+                    .fixed { position: absolute !important; }
+                }
+            `}</style>
 
             {/* Connection Status */}
             <div className={`mx-4 mt-4 p-3 rounded-xl flex items-center gap-2 ${isSupabaseConfigured() ? 'bg-green-100 text-green-700' : 'bg-amber-100 text-amber-700'}`}>
@@ -170,8 +197,8 @@ const Reports: React.FC<ReportsProps> = ({ onNavigate }) => {
                         key={period}
                         onClick={() => setSelectedPeriod(period)}
                         className={`flex-1 py-2 rounded-xl font-bold text-sm transition-all ${selectedPeriod === period
-                                ? 'bg-primary text-white shadow-lg shadow-primary/30'
-                                : 'bg-white dark:bg-[#383330] text-warm-accent'
+                            ? 'bg-primary text-white shadow-lg shadow-primary/30'
+                            : 'bg-white dark:bg-[#383330] text-warm-accent'
                             }`}
                     >
                         {period === 'today' ? 'Hoje' : period === 'week' ? '7 dias' : '30 dias'}
@@ -243,9 +270,9 @@ const Reports: React.FC<ReportsProps> = ({ onNavigate }) => {
                                 topProducts.map((product, idx) => (
                                     <div key={product.name} className="flex items-center gap-3">
                                         <div className={`size-8 rounded-lg flex items-center justify-center font-bold text-sm ${idx === 0 ? 'bg-amber-400 text-white' :
-                                                idx === 1 ? 'bg-gray-300 text-gray-700' :
-                                                    idx === 2 ? 'bg-amber-600 text-white' :
-                                                        'bg-warm-accent/20 text-warm-accent'
+                                            idx === 1 ? 'bg-gray-300 text-gray-700' :
+                                                idx === 2 ? 'bg-amber-600 text-white' :
+                                                    'bg-warm-accent/20 text-warm-accent'
                                             }`}>
                                             {idx + 1}
                                         </div>
