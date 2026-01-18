@@ -1,11 +1,12 @@
-
 import React, { useState } from 'react';
+import { Page } from '../types';
 
 interface LoginProps {
   onLogin: (email: string, isAdmin: boolean) => void;
+  onNavigate?: (page: Page) => void;
 }
 
-const Login: React.FC<LoginProps> = ({ onLogin }) => {
+const Login: React.FC<LoginProps> = ({ onLogin, onNavigate }) => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
@@ -152,10 +153,21 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
       </div>
 
       {/* Footer */}
-      <div className="pb-10 px-4 text-center">
+      <div className="pb-10 px-4 text-center space-y-3">
         <p className="text-accent-brown dark:text-primary/70 text-sm">
           🏢 Exclusivo para moradores do Bourgogne
         </p>
+        {onNavigate && (
+          <p className="text-warm-accent text-sm">
+            Não tem conta?{' '}
+            <button
+              onClick={() => onNavigate(Page.REGISTER)}
+              className="text-primary font-bold hover:underline"
+            >
+              Criar Conta
+            </button>
+          </p>
+        )}
       </div>
     </div>
   );

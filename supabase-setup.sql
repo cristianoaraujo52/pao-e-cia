@@ -34,11 +34,42 @@ CREATE TABLE IF NOT EXISTS orders (
   updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
+-- Tabela de Moradores
+CREATE TABLE IF NOT EXISTS residents (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  name TEXT NOT NULL,
+  email TEXT UNIQUE,
+  phone TEXT,
+  block TEXT NOT NULL CHECK (block IN ('1', '2', '3', '4')),
+  apartment TEXT NOT NULL,
+  password_hash TEXT NOT NULL,
+  is_admin BOOLEAN DEFAULT FALSE,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+  updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+-- Tabela de Mensagens (Chat)
+CREATE TABLE IF NOT EXISTS messages (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  sender_id UUID REFERENCES residents(id),
+  sender_name TEXT NOT NULL,
+  sender_block TEXT,
+  sender_apartment TEXT,
+  content TEXT NOT NULL,
+  is_from_admin BOOLEAN DEFAULT FALSE,
+  recipient_id UUID REFERENCES residents(id),
+  read_at TIMESTAMP WITH TIME ZONE,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
 -- Índices para melhor performance
 CREATE INDEX IF NOT EXISTS idx_products_category ON products(category);
 CREATE INDEX IF NOT EXISTS idx_products_created_at ON products(created_at DESC);
 CREATE INDEX IF NOT EXISTS idx_orders_status ON orders(status);
 CREATE INDEX IF NOT EXISTS idx_orders_created_at ON orders(created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_residents_block ON residents(block);
+CREATE INDEX IF NOT EXISTS idx_messages_sender ON messages(sender_id);
+CREATE INDEX IF NOT EXISTS idx_messages_created_at ON messages(created_at DESC);
 CREATE INDEX IF NOT EXISTS idx_orders_delivery_block ON orders(delivery_block);
 
 -- Função para atualizar updated_at automaticamente
@@ -91,8 +122,33 @@ CREATE POLICY "Criar pedidos" ON orders
 CREATE POLICY "Atualizar pedidos" ON orders
     FOR UPDATE USING (true);
 
--- Habilitar Realtime para pedidos (notificações em tempo real)
+-- Habilitar RLS para moradores e mensagens
+ALTER TABLE residents ENABLE ROW LEVEL SECURITY;
+ALTER TABLE messages ENABLE ROW LEVEL SECURITY;
+
+-- Políticas de moradores
+CREATE POLICY "Inserir moradores" ON residents
+    FOR INSERT WITH CHECK (true);
+
+CREATE POLICY "Visualizar moradores" ON residents
+    FOR SELECT USING (true);
+
+CREATE POLICY "Atualizar moradores" ON residents
+    FOR UPDATE USING (true);
+
+-- Políticas de mensagens
+CREATE POLICY "Inserir mensagens" ON messages
+    FOR INSERT WITH CHECK (true);
+
+CREATE POLICY "Visualizar mensagens" ON messages
+    FOR SELECT USING (true);
+
+CREATE POLICY "Atualizar mensagens" ON messages
+    FOR UPDATE USING (true);
+
+-- Habilitar Realtime para pedidos e mensagens
 ALTER PUBLICATION supabase_realtime ADD TABLE orders;
+ALTER PUBLICATION supabase_realtime ADD TABLE messages;
 
 -- =====================================================
 -- DADOS INICIAIS (OPCIONAL - descomente para usar)

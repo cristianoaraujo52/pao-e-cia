@@ -15,11 +15,13 @@ import Navbar from './components/Navbar';
 import BottomNav from './components/BottomNav';
 import Home from './pages/Home';
 import Login from './pages/Login';
+import Register from './pages/Register';
 import Checkout from './pages/Checkout';
 import Tracking from './pages/Tracking';
 import Profile from './pages/Profile';
 import Admin from './pages/Admin';
 import Reports from './pages/Reports';
+import Chat from './pages/Chat';
 import NotificationToast from './components/NotificationToast';
 
 const App: React.FC = () => {
@@ -141,17 +143,24 @@ const App: React.FC = () => {
     addNotification(`"${product.name}" adicionado ao carrinho!`, 'success');
   };
 
-  const handleLogin = (email: string, isAdmin: boolean = false) => {
-    const newUser = {
-      id: '1',
-      name: isAdmin ? 'Administrador' : 'Morador Bourgogne',
+  const handleLogin = (email: string, isAdmin: boolean = false, userData?: { name?: string; block?: string; apartment?: string; id?: string }) => {
+    const newUser: User = {
+      id: userData?.id || Math.random().toString(36).substr(2, 9),
+      name: userData?.name || (isAdmin ? 'Administrador' : 'Morador Bourgogne'),
       email,
+      block: userData?.block,
+      apartment: userData?.apartment,
       isAuthenticated: true,
       isAdmin
     };
     setUser(newUser);
     setCurrentPage(Page.HOME);
     addNotification(`Bem-vindo, ${newUser.name}!`, 'success');
+  };
+
+  const handleRegisterSuccess = (name: string, block: string, apartment: string) => {
+    handleLogin(`${block}-${apartment}@bourgogne.com`, false, { name, block, apartment });
+    addNotification('Conta criada com sucesso!', 'success');
   };
 
   const handleLogout = () => {
@@ -213,7 +222,9 @@ const App: React.FC = () => {
           />
         );
       case Page.LOGIN:
-        return <Login onLogin={handleLogin} />;
+        return <Login onLogin={handleLogin} onNavigate={setCurrentPage} />;
+      case Page.REGISTER:
+        return <Register onNavigate={setCurrentPage} onRegisterSuccess={handleRegisterSuccess} />;
       case Page.CHECKOUT:
         return <Checkout cart={cart} user={user} onComplete={handleOrderComplete} onNavigate={setCurrentPage} />;
       case Page.TRACKING:
@@ -232,6 +243,8 @@ const App: React.FC = () => {
         );
       case Page.REPORTS:
         return <Reports onNavigate={setCurrentPage} />;
+      case Page.CHAT:
+        return <Chat user={user} onNavigate={setCurrentPage} />;
       default:
         return <Home products={filteredProducts} onAddToCart={addToCart} searchQuery={searchQuery} setSearchQuery={setSearchQuery} selectedCategory={selectedCategory} setSelectedCategory={setSelectedCategory} />;
     }

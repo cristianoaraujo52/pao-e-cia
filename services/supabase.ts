@@ -280,3 +280,243 @@ export function subscribeToOrders(callback: (order: Order) => void) {
         })
         .subscribe();
 }
+
+// ==================== RESIDENTS (MORADORES) ====================
+
+import { Resident, ChatMessage } from '../types';
+
+export async function registerResident(data: {
+    name: string;
+    email?: string;
+    phone?: string;
+    block: string;
+    apartment: string;
+    password: string;
+}): Promise<Resident | null> {
+    if (!supabase) return null;
+
+    // Simple hash for demo (in production, use proper auth)
+    const passwordHash = btoa(data.password);
+
+    const { data: resident, error } = await supabase
+        .from('residents')
+        .insert({
+            name: data.name,
+            email: data.email || null,
+            phone: data.phone || null,
+            block: data.block,
+            apartment: data.apartment,
+            password_hash: passwordHash,
+            is_admin: false,
+        })
+        .select()
+        .single();
+
+    if (error) {
+        console.error('Erro ao cadastrar morador:', error);
+        return null;
+    }
+
+    return {
+        id: resident.id,
+        name: resident.name,
+        email: resident.email,
+        phone: resident.phone,
+        block: resident.block,
+        apartment: resident.apartment,
+        isAdmin: resident.is_admin,
+        createdAt: resident.created_at,
+    };
+}
+
+export async function loginResident(
+    identifier: string,
+    password: string
+): Promise<Resident | null> {
+    if (!supabase) return null;
+
+    const passwordHash = btoa(password);
+
+    // Try to find by email or block-apartment combo
+    let query = supabase.from('residents').select('*');
+
+    if (identifier.includes('@')) {
+        query = query.eq('email', identifier);
+    } else {
+        // Assume format like "1-101" (block-apartment)
+        const parts = identifier.split('-');
+        if (parts.length === 2) {
+            query = query.eq('block', parts[0]).eq('apartment', parts[1]);
+        } else {
+            query = query.eq('apartment', identifier);
+        }
+    }
+
+    const { data: residents, error } = await query;
+
+    if (error || !residents || residents.length === 0) {
+        console.error('Morador não encontrado:', error);
+        return null;
+    }
+
+    const resident = residents[0];
+
+    if (resident.password_hash !== passwordHash) {
+        console.error('Senha incorreta');
+        return null;
+    }
+
+    return {
+        id: resident.id,
+        name: resident.name,
+        email: resident.email,
+        phone: resident.phone,
+        block: resident.block,
+        apartment: resident.apartment,
+        isAdmin: resident.is_admin,
+        createdAt: resident.created_at,
+    };
+}
+
+export async function fetchResidents(): Promise<Resident[]> {
+    if (!supabase) return [];
+
+    const { data, error } = await supabase
+        .from('residents')
+        .select('*')
+        .order('created_at', { ascending: false });
+
+    if (error) {
+        console.error('Erro ao buscar moradores:', error);
+        return [];
+    }
+
+    return data.map(r => ({
+        id: r.id,
+        name: r.name,
+        email: r.email,
+        phone: r.phone,
+        block: r.block,
+        apartment: r.apartment,
+        isAdmin: r.is_admin,
+        createdAt: r.created_at,
+    }));
+}
+
+// ==================== CHAT / MESSAGES ====================
+
+export async function fetchMessages(userId?: string): Promise<ChatMessage[]> {
+    if (!supabase) return [];
+
+    let query = supabase
+        .from('messages')
+        .select('*')
+        .order('created_at', { ascending: true });
+
+    if (userId) {
+        query = query.or(`sender_id.eq.${userId},recipient_id.eq.${userId}`);
+    }
+
+    const { data, error } = await query;
+
+    if (error) {
+        console.error('Erro ao buscar mensagens:', error);
+        return [];
+    }
+
+    return data.map(m => ({
+        id: m.id,
+        senderId: m.sender_id,
+        senderName: m.sender_name,
+        senderBlock: m.sender_block,
+        senderApartment: m.sender_apartment,
+        content: m.content,
+        isFromAdmin: m.is_from_admin,
+        recipientId: m.recipient_id,
+        readAt: m.read_at,
+        createdAt: m.created_at,
+    }));
+}
+
+export async function sendMessage(data: {
+    senderId?: string;
+    senderName: string;
+    senderBlock?: string;
+    senderApartment?: string;
+    content: string;
+    isFromAdmin: boolean;
+    recipientId?: string;
+}): Promise<ChatMessage | null> {
+    if (!supabase) return null;
+
+    const { data: message, error } = await supabase
+        .from('messages')
+        .insert({
+            sender_id: data.senderId || null,
+            sender_name: data.senderName,
+            sender_block: data.senderBlock || null,
+            sender_apartment: data.senderApartment || null,
+            content: data.content,
+            is_from_admin: data.isFromAdmin,
+            recipient_id: data.recipientId || null,
+        })
+        .select()
+        .single();
+
+    if (error) {
+        console.error('Erro ao enviar mensagem:', error);
+        return null;
+    }
+
+    return {
+        id: message.id,
+        senderId: message.sender_id,
+        senderName: message.sender_name,
+        senderBlock: message.sender_block,
+        senderApartment: message.sender_apartment,
+        content: message.content,
+        isFromAdmin: message.is_from_admin,
+        recipientId: message.recipient_id,
+        readAt: message.read_at,
+        createdAt: message.created_at,
+    };
+}
+
+export function subscribeToMessages(callback: (message: ChatMessage) => void) {
+    if (!supabase) return null;
+
+    return supabase
+        .channel('messages')
+        .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'messages' }, (payload) => {
+            const m = payload.new as any;
+            callback({
+                id: m.id,
+                senderId: m.sender_id,
+                senderName: m.sender_name,
+                senderBlock: m.sender_block,
+                senderApartment: m.sender_apartment,
+                content: m.content,
+                isFromAdmin: m.is_from_admin,
+                recipientId: m.recipient_id,
+                readAt: m.read_at,
+                createdAt: m.created_at,
+            });
+        })
+        .subscribe();
+}
+
+export async function markMessagesAsRead(messageIds: string[]): Promise<boolean> {
+    if (!supabase || messageIds.length === 0) return false;
+
+    const { error } = await supabase
+        .from('messages')
+        .update({ read_at: new Date().toISOString() })
+        .in('id', messageIds);
+
+    if (error) {
+        console.error('Erro ao marcar mensagens como lidas:', error);
+        return false;
+    }
+
+    return true;
+}

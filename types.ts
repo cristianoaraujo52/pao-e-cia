@@ -19,8 +19,35 @@ export interface User {
   id: string;
   name: string;
   email: string;
+  phone?: string;
+  block?: string;
+  apartment?: string;
   isAuthenticated: boolean;
   isAdmin?: boolean;
+}
+
+export interface Resident {
+  id: string;
+  name: string;
+  email?: string;
+  phone?: string;
+  block: '1' | '2' | '3' | '4';
+  apartment: string;
+  isAdmin?: boolean;
+  createdAt?: string;
+}
+
+export interface ChatMessage {
+  id: string;
+  senderId?: string;
+  senderName: string;
+  senderBlock?: string;
+  senderApartment?: string;
+  content: string;
+  isFromAdmin: boolean;
+  recipientId?: string;
+  readAt?: string;
+  createdAt: string;
 }
 
 export interface Notification {
@@ -32,11 +59,13 @@ export interface Notification {
 export enum Page {
   HOME = 'home',
   LOGIN = 'login',
+  REGISTER = 'register',
   CHECKOUT = 'checkout',
   TRACKING = 'tracking',
   PROFILE = 'profile',
   ADMIN = 'admin',
-  REPORTS = 'reports'
+  REPORTS = 'reports',
+  CHAT = 'chat'
 }
 
 export type PaymentMethodType = 'pix' | 'card' | 'cash' | 'monthly';

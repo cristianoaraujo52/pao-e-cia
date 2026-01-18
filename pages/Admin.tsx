@@ -1,9 +1,17 @@
 
 import React, { useState, useEffect } from 'react';
-import { Product, Page, Order } from '../types';
+import { Product, Page, Order, ChatMessage } from '../types';
 import ProductModal from '../components/ProductModal';
 import { generateId, loadOrders } from '../services/storage';
-import { isSupabaseConfigured, fetchOrders as fetchSupabaseOrders, subscribeToOrders } from '../services/supabase';
+import {
+    isSupabaseConfigured,
+    fetchOrders as fetchSupabaseOrders,
+    subscribeToOrders,
+    fetchMessages,
+    sendMessage,
+    subscribeToMessages,
+    markMessagesAsRead
+} from '../services/supabase';
 
 interface AdminProps {
     products: Product[];
@@ -11,6 +19,15 @@ interface AdminProps {
     onUpdateProduct: (product: Product) => void;
     onDeleteProduct: (productId: string) => void;
     onNavigate: (page: Page) => void;
+}
+
+interface Conversation {
+    userId: string;
+    name: string;
+    block: string;
+    apartment: string;
+    lastMessage: ChatMessage;
+    unreadCount: number;
 }
 
 const Admin: React.FC<AdminProps> = ({
@@ -24,32 +41,58 @@ const Admin: React.FC<AdminProps> = ({
     const [editingProduct, setEditingProduct] = useState<Product | null>(null);
     const [searchQuery, setSearchQuery] = useState('');
     const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null);
-    const [activeTab, setActiveTab] = useState<'products' | 'orders'>('products');
+    const [activeTab, setActiveTab] = useState<'products' | 'orders' | 'messages'>('products');
     const [orders, setOrders] = useState<Order[]>([]);
     const [newOrderAlert, setNewOrderAlert] = useState<Order | null>(null);
 
+    // Chat states
+    const [messages, setMessages] = useState<ChatMessage[]>([]);
+    const [selectedChatUser, setSelectedChatUser] = useState<string | null>(null);
+    const [adminMessage, setAdminMessage] = useState('');
+    const [isSending, setIsSending] = useState(false);
+
     useEffect(() => {
         loadOrdersData();
+        loadMessages();
 
-        // Subscribe to realtime orders if Supabase is configured
         if (isSupabaseConfigured()) {
-            const subscription = subscribeToOrders((newOrder) => {
+            // Subscribe to orders
+            const ordersSub = subscribeToOrders((newOrder) => {
                 setOrders(prev => [newOrder, ...prev]);
                 setNewOrderAlert(newOrder);
-                // Play notification sound (optional)
-                try {
-                    const audio = new Audio('data:audio/wav;base64,UklGRnoGAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQoGAACBhYqFbF1fdJivrJBhNjVgodDbq2EcBj+a2teleRYIN3+/y9V9OxoYY6jI03kwAABWqL3Sd0EWH2OjuNRnJQYfZJ+3zV8lChxmnLLLWiMOH2Oatc5bIwwcYJmyz1wmDx1dmq/QWR8NHV6ZsNJZHwsaXZmt01gcCxpdmq7UWBsKGlyZrtVXGgoZXJmu1lYaCxlcmazXVhoLGVyZrdhWGQsZXJms2VYZCxlcmazaVRkLGFyZrNtVGAwYXJmt3FQYDBhcmK3dUxgMGFuYrd5TGAwYW5is31IYDBhbmazgURcMGFuYrOFRFwwYW5es4VAXDRhbl6vkTxcNGFuXq+RPFw0YXJer5U4XDRhcl6vnThcNGFyXq+hMGAwYXJer6UwYDBdcl6vpShgMFlyXq+lKFwwWXJer6UoXDBZcl6voSxcMFVyXq+hMFwwVXJar6EwXDBVclqvoTBcNFVuXq+dNFwwVW5er500XDBVbl6vnThcMFVuXq+dOFwwVW5er504XDBRcF6vmzxcMFFwXq+bPFwwUXBer5s8XDBRcF6vmzxcMFFwXq+XPFwwUXBer5c8');
-                    audio.volume = 0.3;
-                    audio.play();
-                } catch (e) { }
+                playNotificationSound();
                 setTimeout(() => setNewOrderAlert(null), 5000);
             });
 
+            // Subscribe to messages
+            const messagesSub = subscribeToMessages((msg) => {
+                setMessages(prev => [...prev, msg]);
+                if (!msg.isFromAdmin) {
+                    playNotificationSound();
+                }
+            });
+
             return () => {
-                subscription?.unsubscribe();
+                ordersSub?.unsubscribe();
+                messagesSub?.unsubscribe();
             };
         }
     }, []);
+
+    const playNotificationSound = () => {
+        try {
+            const audio = new Audio('data:audio/wav;base64,UklGRnoGAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQoGAACBhYqFbF1fdJivrJBhNjVgodDbq2EcBj+a2teleRYIN3+/y9V9OxoYY6jI03kwAABWqL3Sd0EWH2OjuNRnJQYfZJ+3zV8lChxmnLLLWiMOH2Oatc5bIwwcYJmyz1wmDx1dmq/QWR8NHV6ZsNJZHwsaXZmt01gcCxpdmq7UWBsKGlyZrtVXGgoZXJmu1lYaCxlcmazXVhoLGVyZrdhWGQsZXJms2VYZCxlcmazaVRkLGFyZrNtVGAwYXJmt3FQYDBhcmK3dUxgMGFuYrd5TGAwYW5is31IYDBhbmazgURcMGFuYrOFRFwwYW5es4VAXDRhbl6vkTxcNGFuXq+RPFw0YXJer5U4XDRhcl6vnThcNGFyXq+hMGAwYXJer6UwYDBdcl6vpShgMFlyXq+lKFwwWXJer6UoXDBZcl6voSxcMFVyXq+hMFwwVXJar6EwXDBVclqvoTBcNFVuXq+dNFwwVW5er500XDBVbl6vnThcMFVuXq+dOFwwVW5er504XDBRcF6vmzxcMFFwXq+bPFwwUXBer5s8XDBRcF6vmzxcMFFwXq+XPFwwUXBer5c8');
+            audio.volume = 0.3;
+            audio.play();
+        } catch (e) { }
+    };
+
+    const loadMessages = async () => {
+        if (isSupabaseConfigured()) {
+            const data = await fetchMessages();
+            setMessages(data);
+        }
+    };
 
     const loadOrdersData = async () => {
         if (isSupabaseConfigured()) {
@@ -135,18 +178,24 @@ const Admin: React.FC<AdminProps> = ({
             <header className="sticky top-0 z-40 bg-primary p-4">
                 <div className="flex items-center justify-between">
                     <button
-                        onClick={() => onNavigate(Page.HOME)}
+                        onClick={() => {
+                            if (selectedChatUser) {
+                                setSelectedChatUser(null);
+                            } else {
+                                onNavigate(Page.HOME);
+                            }
+                        }}
                         className="size-10 bg-white/20 rounded-xl flex items-center justify-center text-white"
                     >
                         <span className="material-symbols-outlined">arrow_back</span>
                     </button>
                     <div className="text-center">
-                        <h1 className="text-white text-lg font-extrabold">Painel Admin</h1>
-                        <p className="text-white/70 text-xs">Gerenciar produtos e pedidos</p>
+                        <h1 className="text-white text-lg font-extrabold">{selectedChatUser ? 'Chat' : 'Painel Admin'}</h1>
+                        <p className="text-white/70 text-xs">{selectedChatUser ? 'Respondendo morador' : 'Gerenciar produtos e pedidos'}</p>
                     </div>
                     <button
                         onClick={() => onNavigate(Page.REPORTS)}
-                        className="size-10 bg-white/20 rounded-xl flex items-center justify-center text-white"
+                        className={`size-10 bg-white/20 rounded-xl flex items-center justify-center text-white ${selectedChatUser ? 'opacity-0 pointer-events-none' : ''}`}
                     >
                         <span className="material-symbols-outlined">bar_chart</span>
                     </button>
@@ -175,6 +224,21 @@ const Admin: React.FC<AdminProps> = ({
                 <span className="font-bold">
                     {isSupabaseConfigured() ? 'Online (Supabase)' : 'Offline (LocalStorage)'}
                 </span>
+                <button
+                    onClick={() => setActiveTab('messages')}
+                    className={`flex-1 py-2 rounded-xl font-bold text-sm transition-all relative ${activeTab === 'messages'
+                        ? 'bg-primary text-white shadow-lg shadow-primary/30'
+                        : 'bg-white dark:bg-[#383330] text-warm-accent'
+                        }`}
+                >
+                    <span className="material-symbols-outlined text-sm align-middle mr-1">chat</span>
+                    Chat
+                    {messages.filter(m => !m.isFromAdmin && !m.readAt).length > 0 && (
+                        <span className="absolute -top-1 -right-1 bg-red-500 text-white text-[10px] w-5 h-5 rounded-full flex items-center justify-center font-bold">
+                            {messages.filter(m => !m.isFromAdmin && !m.readAt).length}
+                        </span>
+                    )}
+                </button>
             </div>
 
             {/* Tabs */}
@@ -182,8 +246,8 @@ const Admin: React.FC<AdminProps> = ({
                 <button
                     onClick={() => setActiveTab('products')}
                     className={`flex-1 py-2 rounded-xl font-bold text-sm transition-all ${activeTab === 'products'
-                            ? 'bg-primary text-white shadow-lg shadow-primary/30'
-                            : 'bg-white dark:bg-[#383330] text-warm-accent'
+                        ? 'bg-primary text-white shadow-lg shadow-primary/30'
+                        : 'bg-white dark:bg-[#383330] text-warm-accent'
                         }`}
                 >
                     <span className="material-symbols-outlined text-sm align-middle mr-1">inventory_2</span>
@@ -192,8 +256,8 @@ const Admin: React.FC<AdminProps> = ({
                 <button
                     onClick={() => setActiveTab('orders')}
                     className={`flex-1 py-2 rounded-xl font-bold text-sm transition-all relative ${activeTab === 'orders'
-                            ? 'bg-primary text-white shadow-lg shadow-primary/30'
-                            : 'bg-white dark:bg-[#383330] text-warm-accent'
+                        ? 'bg-primary text-white shadow-lg shadow-primary/30'
+                        : 'bg-white dark:bg-[#383330] text-warm-accent'
                         }`}
                 >
                     <span className="material-symbols-outlined text-sm align-middle mr-1">receipt_long</span>
@@ -339,6 +403,152 @@ const Admin: React.FC<AdminProps> = ({
                         <div className="text-center py-12 bg-white dark:bg-[#383330] rounded-2xl">
                             <span className="material-symbols-outlined text-5xl text-warm-accent/40 mb-4">inbox</span>
                             <p className="font-bold text-[#1d180c] dark:text-white">Nenhum pedido ainda</p>
+                        </div>
+                    )}
+                </div>
+            )}
+
+            {/* Messages Tab */}
+            {activeTab === 'messages' && (
+                <div className="h-[calc(100vh-180px)] flex flex-col">
+                    {!selectedChatUser ? (
+                        /* Conversations List */
+                        <div className="px-4 space-y-3 pb-8 overflow-y-auto">
+                            {Object.entries(messages.reduce<Record<string, Conversation>>((acc, msg) => {
+                                const userId = msg.senderId === 'admin' ? msg.recipientId : msg.senderId;
+                                if (!userId) return acc;
+
+                                if (!acc[userId]) {
+                                    acc[userId] = {
+                                        userId,
+                                        name: msg.senderId === 'admin' ? 'Morador' : (msg.senderName || 'Morador'),
+                                        block: msg.senderId === 'admin' ? '' : (msg.senderBlock || ''),
+                                        apartment: msg.senderId === 'admin' ? '' : (msg.senderApartment || ''),
+                                        lastMessage: msg,
+                                        unreadCount: 0
+                                    };
+                                }
+
+                                if (new Date(msg.createdAt) > new Date(acc[userId].lastMessage.createdAt)) {
+                                    acc[userId].lastMessage = msg;
+                                    // Update name only if it's not from admin, to ensure we have the user's name
+                                    if (!msg.isFromAdmin) {
+                                        acc[userId].name = msg.senderName;
+                                        acc[userId].block = msg.senderBlock || '';
+                                        acc[userId].apartment = msg.senderApartment || '';
+                                    }
+                                }
+
+                                if (!msg.isFromAdmin && !msg.readAt) {
+                                    acc[userId].unreadCount++;
+                                }
+                                return acc;
+                            }, {}))
+                                .sort(([, a], [, b]) => new Date(b.lastMessage.createdAt).getTime() - new Date(a.lastMessage.createdAt).getTime())
+                                .map(([userId, conv]) => (
+                                    <div
+                                        key={userId}
+                                        onClick={() => setSelectedChatUser(userId)}
+                                        className="bg-white dark:bg-[#383330] p-4 rounded-xl shadow-sm cursor-pointer active:scale-[0.98] transition-all"
+                                    >
+                                        <div className="flex justify-between items-start mb-1">
+                                            <div>
+                                                <p className="font-bold text-[#1d180c] dark:text-white">
+                                                    {conv.name}
+                                                </p>
+                                                <p className="text-xs text-warm-accent">
+                                                    {conv.block ? `Bloco ${conv.block}, Apt ${conv.apartment}` : 'Morador'}
+                                                </p>
+                                            </div>
+                                            {conv.unreadCount > 0 && (
+                                                <span className="bg-red-500 text-white text-xs font-bold px-2 py-0.5 rounded-full">
+                                                    {conv.unreadCount} nova(s)
+                                                </span>
+                                            )}
+                                        </div>
+                                        <div className="flex justify-between items-end">
+                                            <p className="text-sm text-warm-accent/80 truncate max-w-[200px]">
+                                                {conv.lastMessage.isFromAdmin && 'Você: '}
+                                                {conv.lastMessage.content}
+                                            </p>
+                                            <span className="text-[10px] text-warm-accent/60">
+                                                {new Date(conv.lastMessage.createdAt).toLocaleString('pt-BR', { hour: '2-digit', minute: '2-digit' })}
+                                            </span>
+                                        </div>
+                                    </div>
+                                ))}
+
+                            {messages.length === 0 && (
+                                <div className="text-center py-12 bg-white dark:bg-[#383330] rounded-2xl">
+                                    <span className="material-symbols-outlined text-5xl text-warm-accent/40 mb-4">chat_bubble_outline</span>
+                                    <p className="font-bold text-[#1d180c] dark:text-white">Nenhuma mensagem</p>
+                                </div>
+                            )}
+                        </div>
+                    ) : (
+                        /* Chat View */
+                        <div className="flex flex-col h-full bg-white dark:bg-[#383330] rounded-t-2xl shadow-inner overflow-hidden">
+                            <div className="flex-1 overflow-y-auto p-4 space-y-3">
+                                {messages
+                                    .filter(m => m.senderId === selectedChatUser || m.recipientId === selectedChatUser)
+                                    .sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime())
+                                    .map(msg => (
+                                        <div key={msg.id} className={`flex ${msg.isFromAdmin ? 'justify-end' : 'justify-start'}`}>
+                                            <div className={`max-w-[80%] p-3 rounded-2xl ${msg.isFromAdmin
+                                                ? 'bg-primary text-white rounded-br-md'
+                                                : 'bg-background-light dark:bg-[#272321] text-[#1d180c] dark:text-white rounded-bl-md'
+                                                }`}>
+                                                <p className="text-sm">{msg.content}</p>
+                                                <p className={`text-[10px] mt-1 text-right ${msg.isFromAdmin ? 'text-white/70' : 'text-warm-accent'}`}>
+                                                    {new Date(msg.createdAt).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}
+                                                </p>
+                                            </div>
+                                        </div>
+                                    ))}
+                            </div>
+                            <div className="p-3 bg-background-light dark:bg-[#272321] border-t border-warm-accent/10 flex gap-2">
+                                <input
+                                    type="text"
+                                    value={adminMessage}
+                                    onChange={(e) => setAdminMessage(e.target.value)}
+                                    placeholder="Digite sua resposta..."
+                                    className="flex-1 h-10 px-4 rounded-xl border border-warm-accent/20 bg-white dark:bg-[#383330] focus:ring-2 focus:ring-primary outline-none"
+                                    onKeyPress={async (e) => {
+                                        if (e.key === 'Enter' && !isSending && adminMessage.trim()) {
+                                            setIsSending(true);
+                                            await sendMessage({
+                                                senderName: 'Admin',
+                                                content: adminMessage,
+                                                isFromAdmin: true,
+                                                recipientId: selectedChatUser
+                                            });
+                                            setAdminMessage('');
+                                            setIsSending(false);
+                                        }
+                                    }}
+                                />
+                                <button
+                                    disabled={isSending || !adminMessage.trim()}
+                                    onClick={async () => {
+                                        setIsSending(true);
+                                        await sendMessage({
+                                            senderName: 'Admin',
+                                            content: adminMessage,
+                                            isFromAdmin: true,
+                                            recipientId: selectedChatUser
+                                        });
+                                        setAdminMessage('');
+                                        setIsSending(false);
+                                    }}
+                                    className="size-10 bg-primary text-white rounded-xl flex items-center justify-center shadow-lg shadow-primary/30"
+                                >
+                                    {isSending ? (
+                                        <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                                    ) : (
+                                        <span className="material-symbols-outlined">send</span>
+                                    )}
+                                </button>
+                            </div>
                         </div>
                     )}
                 </div>

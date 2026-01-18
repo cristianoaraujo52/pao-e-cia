@@ -43,6 +43,14 @@ const BottomNav: React.FC<BottomNavProps> = ({ currentPage, onNavigate, cartCoun
         <span className="text-[10px] font-bold">Pedidos</span>
       </button>
 
+      <button
+        onClick={() => onNavigate(Page.CHAT)}
+        className={`flex flex-col items-center gap-1 flex-1 ${isActive(Page.CHAT) ? 'text-primary' : 'text-warm-accent/50 dark:text-white/40'}`}
+      >
+        <span className={`material-symbols-outlined ${isActive(Page.CHAT) ? 'fill-1' : ''}`}>chat</span>
+        <span className="text-[10px] font-bold">Chat</span>
+      </button>
+
       {isAdmin && (
         <button
           onClick={() => onNavigate(Page.ADMIN)}
