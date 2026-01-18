@@ -10,6 +10,7 @@ interface RegisterProps {
 
 const Register: React.FC<RegisterProps> = ({ onNavigate, onRegisterSuccess }) => {
     const [name, setName] = useState('');
+    const [email, setEmail] = useState('');
     const [phone, setPhone] = useState('');
     const [block, setBlock] = useState('1');
     const [apartment, setApartment] = useState('');
@@ -42,6 +43,7 @@ const Register: React.FC<RegisterProps> = ({ onNavigate, onRegisterSuccess }) =>
         if (isSupabaseConfigured()) {
             const resident = await registerResident({
                 name,
+                email: email || undefined,
                 phone: phone || undefined,
                 block,
                 apartment,
@@ -113,6 +115,23 @@ const Register: React.FC<RegisterProps> = ({ onNavigate, onRegisterSuccess }) =>
                             className="w-full rounded-xl text-[#1d180c] dark:text-white focus:outline-none focus:ring-2 focus:ring-primary border-2 border-warm-accent/20 bg-white dark:bg-[#383330] h-14 pl-12 pr-4 text-base font-medium"
                             placeholder="Seu nome completo"
                             required
+                        />
+                    </div>
+                </div>
+
+                {/* Email */}
+                <div>
+                    <label className="text-[#1d180c] dark:text-white text-sm font-bold uppercase tracking-wider block pb-2 px-1">
+                        E-mail (Opcional)
+                    </label>
+                    <div className="relative">
+                        <span className="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-warm-accent/60">mail</span>
+                        <input
+                            type="email"
+                            value={email}
+                            onChange={(e) => setEmail(e.target.value)}
+                            className="w-full rounded-xl text-[#1d180c] dark:text-white focus:outline-none focus:ring-2 focus:ring-primary border-2 border-warm-accent/20 bg-white dark:bg-[#383330] h-14 pl-12 pr-4 text-base font-medium"
+                            placeholder="seu@email.com"
                         />
                     </div>
                 </div>

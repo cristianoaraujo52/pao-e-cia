@@ -353,6 +353,9 @@ export async function loginResident(
         }
     }
 
+    // Sort by latest created to handle re-registrations
+    query = query.order('created_at', { ascending: false });
+
     const { data: residents, error } = await query;
 
     if (error || !residents || residents.length === 0) {

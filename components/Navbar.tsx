@@ -33,8 +33,8 @@ const Navbar: React.FC<NavbarProps> = ({ cartCount, onNavigate, user, currentPag
             <button
               onClick={() => onNavigate(Page.HOME)}
               className={`px-4 py-2 rounded-xl font-bold text-sm transition-colors ${currentPage === Page.HOME
-                  ? 'bg-primary/10 text-primary'
-                  : 'text-warm-accent hover:bg-primary/5'
+                ? 'bg-primary/10 text-primary'
+                : 'text-warm-accent hover:bg-primary/5'
                 }`}
             >
               Início
@@ -42,8 +42,8 @@ const Navbar: React.FC<NavbarProps> = ({ cartCount, onNavigate, user, currentPag
             <button
               onClick={() => onNavigate(Page.TRACKING)}
               className={`px-4 py-2 rounded-xl font-bold text-sm transition-colors ${currentPage === Page.TRACKING
-                  ? 'bg-primary/10 text-primary'
-                  : 'text-warm-accent hover:bg-primary/5'
+                ? 'bg-primary/10 text-primary'
+                : 'text-warm-accent hover:bg-primary/5'
                 }`}
             >
               Pedidos
@@ -52,8 +52,8 @@ const Navbar: React.FC<NavbarProps> = ({ cartCount, onNavigate, user, currentPag
               <button
                 onClick={() => onNavigate(Page.ADMIN)}
                 className={`px-4 py-2 rounded-xl font-bold text-sm transition-colors ${currentPage === Page.ADMIN
-                    ? 'bg-primary/10 text-primary'
-                    : 'text-warm-accent hover:bg-primary/5'
+                  ? 'bg-primary/10 text-primary'
+                  : 'text-warm-accent hover:bg-primary/5'
                   }`}
               >
                 Admin
@@ -93,4 +93,4 @@ const Navbar: React.FC<NavbarProps> = ({ cartCount, onNavigate, user, currentPag
   );
 };
 
-export default Navbar;
+export default React.memo(Navbar);

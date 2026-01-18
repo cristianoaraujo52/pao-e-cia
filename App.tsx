@@ -27,6 +27,10 @@ import NotificationToast from './components/NotificationToast';
 const App: React.FC = () => {
   const [currentPage, setCurrentPage] = useState<Page>(Page.HOME);
 
+  const handleNavigate = useCallback((page: Page) => {
+    setCurrentPage(page);
+  }, []);
+
   // Initialize state from local storage to prevent overwriting on mount
   const [user, setUser] = useState<User | null>(() => {
     const stored = localStorage.getItem('user');
@@ -288,24 +292,24 @@ const App: React.FC = () => {
           />
         );
       case Page.LOGIN:
-        return <Login onLogin={handleLogin} onNavigate={setCurrentPage} />;
+        return <Login onLogin={handleLogin} onNavigate={handleNavigate} />;
       case Page.REGISTER:
-        return <Register onNavigate={setCurrentPage} onRegisterSuccess={handleRegisterSuccess} />;
+        return <Register onNavigate={handleNavigate} onRegisterSuccess={handleRegisterSuccess} />;
       case Page.CHECKOUT:
         return (
           <Checkout
             cart={cart}
             user={user}
             onComplete={handleOrderComplete}
-            onNavigate={setCurrentPage}
+            onNavigate={handleNavigate}
             onRemoveItem={removeFromCart}
             onUpdateQuantity={updateQuantity}
           />
         );
       case Page.TRACKING:
-        return <Tracking order={lastOrder} onFinish={() => setCurrentPage(Page.HOME)} onNavigate={setCurrentPage} />;
+        return <Tracking order={lastOrder} onFinish={() => handleNavigate(Page.HOME)} onNavigate={handleNavigate} />;
       case Page.PROFILE:
-        return <Profile user={user} onLogout={handleLogout} onNavigate={setCurrentPage} />;
+        return <Profile user={user} onLogout={handleLogout} onNavigate={handleNavigate} />;
       case Page.ADMIN:
         return (
           <Admin
@@ -313,13 +317,13 @@ const App: React.FC = () => {
             onAddProduct={handleAddProduct}
             onUpdateProduct={handleUpdateProduct}
             onDeleteProduct={handleDeleteProduct}
-            onNavigate={setCurrentPage}
+            onNavigate={handleNavigate}
           />
         );
       case Page.REPORTS:
-        return <Reports onNavigate={setCurrentPage} />;
+        return <Reports onNavigate={handleNavigate} />;
       case Page.CHAT:
-        return <Chat user={user} onNavigate={setCurrentPage} />;
+        return <Chat user={user} onNavigate={handleNavigate} />;
       default:
         return <Home products={filteredProducts} onAddToCart={addToCart} searchQuery={searchQuery} setSearchQuery={setSearchQuery} selectedCategory={selectedCategory} setSelectedCategory={setSelectedCategory} />;
     }
@@ -329,7 +333,7 @@ const App: React.FC = () => {
     <div className="min-h-screen flex flex-col bg-background-light dark:bg-background-dark">
       <Navbar
         cartCount={cart.reduce((acc, curr) => acc + curr.quantity, 0)}
-        onNavigate={setCurrentPage}
+        onNavigate={handleNavigate}
         user={user}
         currentPage={currentPage}
       />
@@ -346,7 +350,7 @@ const App: React.FC = () => {
 
       <BottomNav
         currentPage={currentPage}
-        onNavigate={setCurrentPage}
+        onNavigate={handleNavigate}
         cartCount={cart.reduce((acc, curr) => acc + curr.quantity, 0)}
         isAdmin={user?.isAdmin}
       />
