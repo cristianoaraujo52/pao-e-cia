@@ -168,6 +168,7 @@ export async function createOrder(order: Order): Promise<Order | null> {
 
     if (error) {
         console.error('Erro ao criar pedido:', error);
+        alert(`Erro ao criar pedido online: ${error.message}\nDetalhes: ${error.details || ''}`);
         return null;
     }
 
