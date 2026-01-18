@@ -5,7 +5,7 @@ import { isSupabaseConfigured, registerResident } from '../services/supabase';
 
 interface RegisterProps {
     onNavigate: (page: Page) => void;
-    onRegisterSuccess: (name: string, block: string, apartment: string) => void;
+    onRegisterSuccess: (name: string, block: string, apartment: string, id?: string) => void;
 }
 
 const Register: React.FC<RegisterProps> = ({ onNavigate, onRegisterSuccess }) => {
@@ -49,7 +49,7 @@ const Register: React.FC<RegisterProps> = ({ onNavigate, onRegisterSuccess }) =>
             });
 
             if (resident) {
-                onRegisterSuccess(name, block, apartment);
+                onRegisterSuccess(name, block, apartment, resident.id);
             } else {
                 setError('Erro ao cadastrar. Tente novamente.');
             }

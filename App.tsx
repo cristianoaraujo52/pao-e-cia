@@ -36,8 +36,59 @@ const App: React.FC = () => {
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
+    // Load state from local storage on mount
+    const storedCart = localStorage.getItem('cart');
+    if (storedCart) {
+      try {
+        setCart(JSON.parse(storedCart));
+      } catch (e) {
+        console.error('Failed to parse cart from local storage');
+      }
+    }
+
+    const storedUser = localStorage.getItem('user');
+    if (storedUser) {
+      try {
+        setUser(JSON.parse(storedUser));
+      } catch (e) {
+        console.error('Failed to parse user from local storage');
+      }
+    }
+
+    const storedOrder = localStorage.getItem('lastOrder');
+    if (storedOrder) {
+      try {
+        setLastOrder(JSON.parse(storedOrder));
+      } catch (e) {
+        console.error('Failed to parse lastOrder from local storage');
+      }
+    }
+
     loadProductsData();
   }, []);
+
+  // Save cart to local storage whenever it changes
+  useEffect(() => {
+    localStorage.setItem('cart', JSON.stringify(cart));
+  }, [cart]);
+
+  // Save user to local storage whenever it changes
+  useEffect(() => {
+    if (user) {
+      localStorage.setItem('user', JSON.stringify(user));
+    } else {
+      localStorage.removeItem('user');
+    }
+  }, [user]);
+
+  // Save lastOrder to local storage whenever it changes
+  useEffect(() => {
+    if (lastOrder) {
+      localStorage.setItem('lastOrder', JSON.stringify(lastOrder));
+    } else {
+      localStorage.removeItem('lastOrder');
+    }
+  }, [lastOrder]);
 
   const loadProductsData = async () => {
     setIsLoading(true);
@@ -70,7 +121,7 @@ const App: React.FC = () => {
   };
 
   const addNotification = useCallback((message: string, type: Notification['type'] = 'info') => {
-    const id = Math.random().toString(36).substr(2, 9);
+    const id = crypto.randomUUID();
     setNotifications(prev => [...prev, { id, message, type }]);
     setTimeout(() => {
       setNotifications(prev => prev.filter(n => n.id !== id));
@@ -145,7 +196,7 @@ const App: React.FC = () => {
 
   const handleLogin = (email: string, isAdmin: boolean = false, userData?: { name?: string; block?: string; apartment?: string; id?: string }) => {
     const newUser: User = {
-      id: userData?.id || Math.random().toString(36).substr(2, 9),
+      id: userData?.id || crypto.randomUUID(),
       name: userData?.name || (isAdmin ? 'Administrador' : 'Morador Bourgogne'),
       email,
       block: userData?.block,
@@ -158,8 +209,8 @@ const App: React.FC = () => {
     addNotification(`Bem-vindo, ${newUser.name}!`, 'success');
   };
 
-  const handleRegisterSuccess = (name: string, block: string, apartment: string) => {
-    handleLogin(`${block}-${apartment}@bourgogne.com`, false, { name, block, apartment });
+  const handleRegisterSuccess = (name: string, block: string, apartment: string, id?: string) => {
+    handleLogin(`${block}-${apartment}@bourgogne.com`, false, { name, block, apartment, id });
     addNotification('Conta criada com sucesso!', 'success');
   };
 
