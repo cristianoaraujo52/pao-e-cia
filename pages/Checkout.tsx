@@ -8,6 +8,8 @@ interface CheckoutProps {
   user: User | null;
   onComplete: (order: Order) => void;
   onNavigate: (page: Page) => void;
+  onRemoveItem?: (id: string) => void;
+  onUpdateQuantity?: (id: string, delta: number) => void;
 }
 
 const BLOCKS = ['1', '2', '3', '4'] as const;
@@ -19,7 +21,7 @@ const PAYMENT_METHODS = [
   { id: 'monthly' as PaymentMethodType, name: 'Fiado', icon: 'receipt_long', description: 'Conta do mês' },
 ];
 
-const Checkout: React.FC<CheckoutProps> = ({ cart, user, onComplete, onNavigate }) => {
+const Checkout: React.FC<CheckoutProps> = ({ cart, user, onComplete, onNavigate, onRemoveItem, onUpdateQuantity }) => {
   const [step, setStep] = useState(1);
   const [coupon, setCoupon] = useState('');
   const [discount, setDiscount] = useState(0);
@@ -146,13 +148,39 @@ const Checkout: React.FC<CheckoutProps> = ({ cart, user, onComplete, onNavigate 
             <span className="text-sm font-bold text-primary bg-primary/10 px-3 py-1 rounded-full">{cart.length} Itens</span>
           </div>
           {cart.map(item => (
-            <div key={item.id} className="flex items-center gap-4 bg-white dark:bg-[#383330] px-4 py-3 rounded-xl shadow-sm">
+            <div key={item.id} className="flex items-center gap-4 bg-white dark:bg-[#383330] px-4 py-3 rounded-xl shadow-sm relative overflow-hidden group">
               <div className="size-16 rounded-lg bg-cover bg-center shrink-0" style={{ backgroundImage: `url(${item.image})` }}></div>
               <div className="flex-1 min-w-0">
                 <p className="font-bold text-[#1d180c] dark:text-white truncate">{item.name}</p>
-                <p className="text-sm font-medium text-warm-accent">R$ {item.price.toLocaleString('pt-BR', { minimumFractionDigits: 2 })} x {item.quantity}</p>
+                <div className="flex items-center gap-3 mt-1">
+                  <p className="text-sm font-medium text-warm-accent">R$ {item.price.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</p>
+
+                  {/* Quantity Controls */}
+                  {onUpdateQuantity && (
+                    <div className="flex items-center gap-2 bg-background-light dark:bg-background-dark rounded-lg px-2 py-0.5">
+                      <button onClick={() => onUpdateQuantity(item.id, -1)} className="text-warm-accent hover:text-primary active:scale-90 px-1 py-1">
+                        <span className="material-symbols-outlined text-sm">remove</span>
+                      </button>
+                      <span className="text-sm font-bold w-4 text-center">{item.quantity}</span>
+                      <button onClick={() => onUpdateQuantity(item.id, 1)} className="text-warm-accent hover:text-primary active:scale-90 px-1 py-1">
+                        <span className="material-symbols-outlined text-sm">add</span>
+                      </button>
+                    </div>
+                  )}
+                </div>
               </div>
-              <p className="font-extrabold text-primary">R$ {(item.price * item.quantity).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</p>
+
+              <div className="flex flex-col items-end gap-2">
+                <p className="font-extrabold text-primary">R$ {(item.price * item.quantity).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</p>
+                {onRemoveItem && (
+                  <button
+                    onClick={() => onRemoveItem(item.id)}
+                    className="text-red-400 hover:text-red-600 bg-red-50 hover:bg-red-100 p-1.5 rounded-lg transition-colors"
+                  >
+                    <span className="material-symbols-outlined text-lg">delete</span>
+                  </button>
+                )}
+              </div>
             </div>
           ))}
           <button onClick={() => setStep(2)} className="w-full h-14 bg-primary text-white font-extrabold rounded-xl shadow-lg shadow-primary/30 flex items-center justify-center gap-2 mt-4">

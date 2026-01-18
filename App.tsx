@@ -248,6 +248,21 @@ const App: React.FC = () => {
     return matchesSearch && matchesCategory;
   });
 
+  const removeFromCart = (productId: string) => {
+    setCart(prev => prev.filter(item => item.id !== productId));
+    addNotification('Item removido do carrinho.', 'info');
+  };
+
+  const updateQuantity = (productId: string, delta: number) => {
+    setCart(prev => prev.map(item => {
+      if (item.id === productId) {
+        const newQuantity = Math.max(1, item.quantity + delta);
+        return { ...item, quantity: newQuantity };
+      }
+      return item;
+    }));
+  };
+
   const renderPage = () => {
     if (isLoading) {
       return (
@@ -277,7 +292,16 @@ const App: React.FC = () => {
       case Page.REGISTER:
         return <Register onNavigate={setCurrentPage} onRegisterSuccess={handleRegisterSuccess} />;
       case Page.CHECKOUT:
-        return <Checkout cart={cart} user={user} onComplete={handleOrderComplete} onNavigate={setCurrentPage} />;
+        return (
+          <Checkout
+            cart={cart}
+            user={user}
+            onComplete={handleOrderComplete}
+            onNavigate={setCurrentPage}
+            onRemoveItem={removeFromCart}
+            onUpdateQuantity={updateQuantity}
+          />
+        );
       case Page.TRACKING:
         return <Tracking order={lastOrder} onFinish={() => setCurrentPage(Page.HOME)} onNavigate={setCurrentPage} />;
       case Page.PROFILE:
