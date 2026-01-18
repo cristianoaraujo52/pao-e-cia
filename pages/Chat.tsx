@@ -15,17 +15,26 @@ const Chat: React.FC<ChatProps> = ({ user, onNavigate }) => {
     const [isSending, setIsSending] = useState(false);
     const messagesEndRef = useRef<HTMLDivElement>(null);
 
+    const [connectionStatus, setConnectionStatus] = useState<'CONNECTING' | 'SUBSCRIBED' | 'CLOSED' | 'ERROR'>('CONNECTING');
+    const [lastError, setLastError] = useState<string | null>(null);
+
     useEffect(() => {
         loadMessages();
 
         // Subscribe to realtime messages
         if (isSupabaseConfigured()) {
-            const subscription = subscribeToMessages((message) => {
-                setMessages(prev => [...prev, message]);
-            });
+            const channel = subscribeToMessages(
+                (message) => {
+                    setMessages(prev => [...prev, message]);
+                },
+                (status) => {
+                    setConnectionStatus(status);
+                    if (status === 'ERROR') setLastError('Erro na conexão em tempo real');
+                }
+            );
 
             return () => {
-                subscription?.unsubscribe();
+                if (channel) supabase?.removeChannel(channel);
             };
         }
     }, []);
@@ -138,11 +147,25 @@ const Chat: React.FC<ChatProps> = ({ user, onNavigate }) => {
             </header>
 
             {/* Connection Status */}
-            <div className={`mx-4 mt-4 p-2 rounded-lg flex items-center gap-2 text-xs ${isSupabaseConfigured() ? 'bg-green-100 text-green-700' : 'bg-amber-100 text-amber-700'}`}>
-                <span className="material-symbols-outlined text-sm">{isSupabaseConfigured() ? 'cloud_done' : 'cloud_off'}</span>
-                <span className="font-bold">
-                    {isSupabaseConfigured() ? 'Chat online' : 'Modo demonstração'}
-                </span>
+            <div className={`mx-4 mt-4 p-2 rounded-lg flex flex-col gap-1 text-xs ${!isSupabaseConfigured() ? 'bg-amber-100 text-amber-700' :
+                    connectionStatus === 'SUBSCRIBED' ? 'bg-green-100 text-green-700' :
+                        connectionStatus === 'ERROR' ? 'bg-red-100 text-red-700' :
+                            'bg-blue-100 text-blue-700'
+                }`}>
+                <div className="flex items-center gap-2">
+                    <span className="material-symbols-outlined text-sm">
+                        {!isSupabaseConfigured() ? 'cloud_off' :
+                            connectionStatus === 'SUBSCRIBED' ? 'cloud_done' :
+                                connectionStatus === 'ERROR' ? 'error' : 'sync'}
+                    </span>
+                    <span className="font-bold">
+                        {!isSupabaseConfigured() ? 'Modo demonstração (Offline)' :
+                            connectionStatus === 'SUBSCRIBED' ? 'Chat Online' :
+                                connectionStatus === 'ERROR' ? 'Erro de Conexão' :
+                                    'Conectando...'}
+                    </span>
+                </div>
+                {lastError && <span className="text-[10px] font-mono mt-1">{lastError}</span>}
             </div>
 
             {/* Messages */}
@@ -179,8 +202,8 @@ const Chat: React.FC<ChatProps> = ({ user, onNavigate }) => {
                                         >
                                             <div
                                                 className={`max-w-[80%] p-3 rounded-2xl ${isMyMessage
-                                                        ? 'bg-primary text-white rounded-br-md'
-                                                        : 'bg-white dark:bg-[#383330] text-[#1d180c] dark:text-white rounded-bl-md shadow-sm'
+                                                    ? 'bg-primary text-white rounded-br-md'
+                                                    : 'bg-white dark:bg-[#383330] text-[#1d180c] dark:text-white rounded-bl-md shadow-sm'
                                                     }`}
                                             >
                                                 {/* Sender Info (for admin messages) */}

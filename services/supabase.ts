@@ -482,10 +482,13 @@ export async function sendMessage(data: {
     };
 }
 
-export function subscribeToMessages(callback: (message: ChatMessage) => void) {
+export function subscribeToMessages(
+    callback: (message: ChatMessage) => void,
+    onStatusChange?: (status: 'CONNECTING' | 'SUBSCRIBED' | 'CLOSED' | 'ERROR') => void
+) {
     if (!supabase) return null;
 
-    return supabase
+    const channel = supabase
         .channel('messages')
         .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'messages' }, (payload) => {
             const m = payload.new as any;
@@ -502,7 +505,16 @@ export function subscribeToMessages(callback: (message: ChatMessage) => void) {
                 createdAt: m.created_at,
             });
         })
-        .subscribe();
+        .subscribe((status) => {
+            if (onStatusChange) {
+                if (status === 'SUBSCRIBED') onStatusChange('SUBSCRIBED');
+                else if (status === 'CHANNEL_ERROR') onStatusChange('ERROR');
+                else if (status === 'TIMED_OUT') onStatusChange('ERROR');
+                else if (status === 'CLOSED') onStatusChange('CLOSED');
+            }
+        });
+
+    return channel;
 }
 
 export async function markMessagesAsRead(messageIds: string[]): Promise<boolean> {

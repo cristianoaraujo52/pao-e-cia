@@ -196,7 +196,7 @@ const App: React.FC = () => {
 
   const handleLogin = (email: string, isAdmin: boolean = false, userData?: { name?: string; block?: string; apartment?: string; id?: string }) => {
     const newUser: User = {
-      id: userData?.id || crypto.randomUUID(),
+      id: userData?.id || crypto.randomUUID(), // Prefer real DB ID
       name: userData?.name || (isAdmin ? 'Administrador' : 'Morador Bourgogne'),
       email,
       block: userData?.block,

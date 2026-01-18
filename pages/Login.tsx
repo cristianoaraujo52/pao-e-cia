@@ -1,8 +1,9 @@
 import React, { useState } from 'react';
 import { Page } from '../types';
+import { isSupabaseConfigured, loginResident } from '../services/supabase';
 
 interface LoginProps {
-  onLogin: (email: string, isAdmin: boolean) => void;
+  onLogin: (email: string, isAdmin: boolean, userData?: any) => void;
   onNavigate?: (page: Page) => void;
 }
 
@@ -11,17 +12,37 @@ const Login: React.FC<LoginProps> = ({ onLogin, onNavigate }) => {
   const [password, setPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
+  const [error, setError] = useState('');
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!email || !password) return;
 
+    setError('');
     setIsLoading(true);
-    setTimeout(() => {
-      const isAdmin = email.toLowerCase().includes('admin') || password === 'admin123';
-      onLogin(email, isAdmin);
-      setIsLoading(false);
-    }, 1200);
+
+    if (isSupabaseConfigured()) {
+      const resident = await loginResident(email, password);
+
+      if (resident) {
+        onLogin(resident.email || email, resident.isAdmin, resident);
+      } else {
+        setError('Usuário ou senha incorretos.');
+      }
+    } else {
+      // Fallback para modo offline/demonstreção
+      setTimeout(() => {
+        const isAdmin = email.toLowerCase().includes('admin') || password === 'admin123';
+        onLogin(email, isAdmin, {
+          name: isAdmin ? 'Admin' : 'Visitante',
+          block: '1',
+          apartment: '101',
+          id: 'demo-user-' + Date.now()
+        });
+      }, 1200);
+    }
+
+    setIsLoading(false);
   };
 
   return (
@@ -52,6 +73,21 @@ const Login: React.FC<LoginProps> = ({ onLogin, onNavigate }) => {
 
       {/* Form */}
       <form onSubmit={handleSubmit} className="px-4 space-y-4">
+        {/* Connection Status */}
+        <div className={`p-3 rounded-xl flex items-center gap-2 ${isSupabaseConfigured() ? 'bg-green-100 text-green-700' : 'bg-amber-100 text-amber-700'}`}>
+          <span className="material-symbols-outlined text-sm">{isSupabaseConfigured() ? 'cloud_done' : 'cloud_off'}</span>
+          <span className="text-xs font-bold">
+            {isSupabaseConfigured() ? 'Login online ativo' : 'Modo demonstração (offline)'}
+          </span>
+        </div>
+
+        {error && (
+          <div className="bg-red-100 text-red-700 p-3 rounded-xl flex items-center gap-2 animate-pulse">
+            <span className="material-symbols-outlined text-sm">error</span>
+            <span className="text-sm font-bold">{error}</span>
+          </div>
+        )}
+
         <div>
           <label className="text-[#1d180c] dark:text-white text-sm font-bold uppercase tracking-wider block pb-2 px-1">
             Seu E-mail ou Apartamento
