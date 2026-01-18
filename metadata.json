@@ -1,0 +1,7 @@
+{
+  "name": "Pão e Cia - Versão Complete",
+  "description": "Uma plataforma vibrante de food service focada em padarias e produtos artesanais, com rastreamento em tempo real, pagamentos e experiência mobile-first.",
+  "requestFramePermissions": [
+    "geolocation"
+  ]
+}
