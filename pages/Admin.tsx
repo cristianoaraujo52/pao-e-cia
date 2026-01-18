@@ -415,15 +415,19 @@ const Admin: React.FC<AdminProps> = ({
                         /* Conversations List */
                         <div className="px-4 space-y-3 pb-8 overflow-y-auto">
                             {Object.entries(messages.reduce<Record<string, Conversation>>((acc, msg) => {
-                                const userId = msg.senderId === 'admin' ? msg.recipientId : msg.senderId;
+                                // Group by the resident's ID
+                                // If message is from admin, the other party is recipientId
+                                // If message is from user, the other party is senderId
+                                const userId = msg.isFromAdmin ? msg.recipientId : msg.senderId;
+
                                 if (!userId) return acc;
 
                                 if (!acc[userId]) {
                                     acc[userId] = {
                                         userId,
-                                        name: msg.senderId === 'admin' ? 'Morador' : (msg.senderName || 'Morador'),
-                                        block: msg.senderId === 'admin' ? '' : (msg.senderBlock || ''),
-                                        apartment: msg.senderId === 'admin' ? '' : (msg.senderApartment || ''),
+                                        name: msg.isFromAdmin ? 'Morador' : (msg.senderName || 'Morador'),
+                                        block: msg.isFromAdmin ? '' : (msg.senderBlock || ''),
+                                        apartment: msg.isFromAdmin ? '' : (msg.senderApartment || ''),
                                         lastMessage: msg,
                                         unreadCount: 0
                                     };
