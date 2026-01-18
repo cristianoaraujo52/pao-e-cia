@@ -392,9 +392,21 @@ const Admin: React.FC<AdminProps> = ({
                                     {order.items.map(item => `${item.quantity}x ${item.name}`).join(', ')}
                                 </div>
                                 <div className="flex items-center justify-between pt-2 border-t border-warm-accent/20">
-                                    <span className="text-xs bg-primary/10 text-primary px-2 py-0.5 rounded font-bold">
-                                        {order.paymentMethod === 'pix' ? 'Pix' : order.paymentMethod === 'card' ? 'Cartão' : order.paymentMethod === 'cash' ? 'Dinheiro' : 'Fiado'}
-                                    </span>
+                                    <div className="flex items-center gap-2">
+                                        <span className="text-xs bg-primary/10 text-primary px-2 py-0.5 rounded font-bold">
+                                            {order.paymentMethod === 'pix' ? 'Pix' : order.paymentMethod === 'card' ? 'Cartão' : order.paymentMethod === 'cash' ? 'Dinheiro' : 'Fiado'}
+                                        </span>
+                                        <button
+                                            onClick={() => {
+                                                setSelectedChatUser(order.userId);
+                                                setActiveTab('messages');
+                                            }}
+                                            className="text-primary text-xs font-bold flex items-center gap-1 hover:bg-primary/5 px-2 py-1 rounded-lg transition-colors"
+                                        >
+                                            <span className="material-symbols-outlined text-sm">chat</span>
+                                            Chat
+                                        </button>
+                                    </div>
                                     <span className="font-extrabold text-primary">R$ {order.total.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</span>
                                 </div>
                             </div>
