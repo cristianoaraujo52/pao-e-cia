@@ -22,10 +22,19 @@ const Chat: React.FC<ChatProps> = ({ user, onNavigate }) => {
         loadMessages();
 
         // Subscribe to realtime messages
-        if (isSupabaseConfigured()) {
+        if (isSupabaseConfigured() && user?.id) {
             const channel = subscribeToMessages(
                 (message) => {
-                    setMessages(prev => [...prev, message]);
+                    // Only add message if it belongs to this user
+                    // (Sender is me OR Recipient is me)
+                    // (Or if it's a broadcast to everyone, though we don't have that yet)
+                    if (message.senderId === user.id || message.recipientId === user.id) {
+                        setMessages(prev => {
+                            // prevent duplicates just in case
+                            if (prev.some(m => m.id === message.id)) return prev;
+                            return [...prev, message];
+                        });
+                    }
                 },
                 (status) => {
                     setConnectionStatus(status);
@@ -37,7 +46,7 @@ const Chat: React.FC<ChatProps> = ({ user, onNavigate }) => {
                 if (channel) supabase?.removeChannel(channel);
             };
         }
-    }, []);
+    }, [user?.id]);
 
     useEffect(() => {
         scrollToBottom();
@@ -148,9 +157,9 @@ const Chat: React.FC<ChatProps> = ({ user, onNavigate }) => {
 
             {/* Connection Status */}
             <div className={`mx-4 mt-4 p-2 rounded-lg flex flex-col gap-1 text-xs ${!isSupabaseConfigured() ? 'bg-amber-100 text-amber-700' :
-                    connectionStatus === 'SUBSCRIBED' ? 'bg-green-100 text-green-700' :
-                        connectionStatus === 'ERROR' ? 'bg-red-100 text-red-700' :
-                            'bg-blue-100 text-blue-700'
+                connectionStatus === 'SUBSCRIBED' ? 'bg-green-100 text-green-700' :
+                    connectionStatus === 'ERROR' ? 'bg-red-100 text-red-700' :
+                        'bg-blue-100 text-blue-700'
                 }`}>
                 <div className="flex items-center gap-2">
                     <span className="material-symbols-outlined text-sm">
